@@ -1,0 +1,73 @@
+# VideoLoop configuration.
+#
+# This is the configuration used for the paper's VideoMME-Long and VideoMMMU
+# results: native multimodal agent + LLM-orchestrated working memory, with
+# frame-based visual analysis (analyze_frames) as the only visual tool.
+#
+# API access: with no api_base set, Gemini models call the official
+# Google Gemini API (generativelanguage.googleapis.com) using GEMINI_API_KEY.
+# Any OpenAI-compatible endpoint can be substituted via api_base.
+
+main_agent:
+  model: "gemini-3.1-pro-preview"   # paper backbone; for a cheaper run use gemini-3.1-flash-lite-preview
+  max_output_tokens: 65536
+  max_retries: 3
+  timeout: 600
+  thinking: true
+  thinking_level: "high"   # "low"/"high"; use thinking_budget (tokens) for models without levels
+  max_images: 32           # Max frames per analyze_frames call
+  multimodal_agent: true
+
+memory:
+  enabled: true
+  file_backed: true
+  orchestrated: true
+  max_context_chars: 64000
+  recent_messages_window: 8
+  min_vlm_calls_before_submit: 3
+  min_iterations_before_submit: 6
+  require_transcript_before_submit: true
+  temporal_radius: 120.0
+  frame_radius: 60.0
+  summarizer_model: "gemini-3.1-pro-preview"
+  summarizer_reasoning_effort: "high"
+  summarizer_max_tokens: 32768
+  summarizer_timeout: 60
+  max_narrative_entries: 40
+  max_pinned_entries: 20
+  manifest_max_detailed: 30
+  manifest_compression_batch: 10
+  orchestrator_max_iterations: 5
+  fs_context_budget: 16000
+  max_key_frames: 6
+
+pricing:
+  # Set these to your billing rates to get cost estimates in run reports.
+  currency: "USD"
+  input_per_million: 0.0
+  output_per_million: 0.0
+  summarizer:
+    input_per_million: 0.0
+    output_per_million: 0.0
+
+visual_planner:
+  enabled: false
+  descriptions_dir: dataset/videomme_long/visual_descriptions
+  narrative_dir: ""
+  model: null
+  max_tokens: 2048
+
+# Tool whitelist used for the paper results. The agent extracts frames with
+# execute_bash + ffmpeg and inspects them via analyze_frames.
+include_tools:
+  - execute_bash
+  - submit_answer
+  - analyze_frames
+  - transcribe_audio
+
+sandbox:
+  image: "video-understanding-sandbox"
+  tag: "latest"
+  gpu: true
+  memory_limit: "32g"
+  shm_size: "8g"

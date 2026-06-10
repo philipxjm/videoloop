@@ -1,0 +1,268 @@
+# Video Understanding Agent - TOOLS LAYER
+# Contains: Helper scripts that may change frequently
+# This builds in ~5 seconds on top of the base image
+
+ARG BASE_IMAGE=video-understanding-base:latest
+FROM ${BASE_IMAGE}
+
+# ==============================================================================
+# HELPER SCRIPTS (these can be modified and rebuilt quickly)
+# ==============================================================================
+
+# Video info helper
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import json\n\
+from pathlib import Path\n\
+\n\
+def get_video_info(video_path):\n\
+    """Get video metadata using ffprobe"""\n\
+    import subprocess\n\
+    cmd = [\n\
+        "ffprobe", "-v", "quiet",\n\
+        "-print_format", "json",\n\
+        "-show_format", "-show_streams",\n\
+        video_path\n\
+    ]\n\
+    result = subprocess.run(cmd, capture_output=True, text=True)\n\
+    return json.loads(result.stdout)\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 2:\n\
+        print("Usage: video_info.py <video_path>")\n\
+        sys.exit(1)\n\
+    info = get_video_info(sys.argv[1])\n\
+    print(json.dumps(info, indent=2))\n\
+' > /usr/local/bin/video_info.py && chmod +x /usr/local/bin/video_info.py
+
+# Frame extraction with ffmpeg fallback (robust version)
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import os\n\
+import subprocess\n\
+import json\n\
+from PIL import Image\n\
+\n\
+def get_video_duration(video_path):\n\
+    """Get video duration using ffprobe"""\n\
+    cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", video_path]\n\
+    result = subprocess.run(cmd, capture_output=True, text=True)\n\
+    if result.returncode == 0:\n\
+        info = json.loads(result.stdout)\n\
+        return float(info.get("format", {}).get("duration", 0))\n\
+    return 0\n\
+\n\
+def extract_frames_ffmpeg(video_path, output_dir, num_frames=8, max_size=512):\n\
+    """Extract frames using ffmpeg (more reliable)"""\n\
+    os.makedirs(output_dir, exist_ok=True)\n\
+    duration = get_video_duration(video_path)\n\
+    if duration <= 0:\n\
+        print(f"Could not get duration for {video_path}", file=sys.stderr)\n\
+        return []\n\
+    \n\
+    paths = []\n\
+    for i in range(num_frames):\n\
+        timestamp = (i * duration) / num_frames\n\
+        output_path = f"{output_dir}/frame_{i:03d}.jpg"\n\
+        cmd = [\n\
+            "ffmpeg", "-y", "-ss", str(timestamp), "-i", video_path,\n\
+            "-vframes", "1", "-q:v", "2",\n\
+            "-vf", f"scale=w=min({max_size}\\,iw):h=-2",\n\
+            output_path\n\
+        ]\n\
+        result = subprocess.run(cmd, capture_output=True, text=True)\n\
+        if result.returncode == 0 and os.path.exists(output_path):\n\
+            paths.append(output_path)\n\
+            print(f"Saved frame {i+1}/{num_frames}: frame_{i:03d}.jpg")\n\
+    return paths\n\
+\n\
+def extract_frames_decord(video_path, output_dir, num_frames=8, max_size=512):\n\
+    """Extract frames using decord (fast but less compatible)"""\n\
+    from decord import VideoReader, cpu\n\
+    import numpy as np\n\
+    \n\
+    os.makedirs(output_dir, exist_ok=True)\n\
+    vr = VideoReader(video_path, ctx=cpu(0))\n\
+    total = len(vr)\n\
+    indices = [int(i * total / num_frames) for i in range(num_frames)]\n\
+    \n\
+    paths = []\n\
+    for i, idx in enumerate(indices):\n\
+        frame = vr[idx].asnumpy()\n\
+        img = Image.fromarray(frame)\n\
+        if max(img.size) > max_size:\n\
+            ratio = max_size / max(img.size)\n\
+            img = img.resize((int(img.width * ratio), int(img.height * ratio)))\n\
+        output_path = f"{output_dir}/frame_{i:03d}.jpg"\n\
+        img.save(output_path, quality=85)\n\
+        paths.append(output_path)\n\
+        print(f"Saved frame {i+1}/{num_frames}: frame_{i:03d}.jpg")\n\
+    return paths\n\
+\n\
+def extract_frames(video_path, output_dir, num_frames=8, max_size=512):\n\
+    """Extract frames - try decord first, fall back to ffmpeg"""\n\
+    try:\n\
+        paths = extract_frames_decord(video_path, output_dir, num_frames, max_size)\n\
+        if paths:\n\
+            return paths\n\
+    except Exception as e:\n\
+        print(f"Decord failed ({e}), using ffmpeg fallback", file=sys.stderr)\n\
+    return extract_frames_ffmpeg(video_path, output_dir, num_frames, max_size)\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 3:\n\
+        print("Usage: extract_frames.py <video_path> <output_dir> [num_frames]")\n\
+        sys.exit(1)\n\
+    num = int(sys.argv[3]) if len(sys.argv) > 3 else 8\n\
+    paths = extract_frames(sys.argv[1], sys.argv[2], num)\n\
+    print(json.dumps(paths))\n\
+' > /usr/local/bin/extract_frames.py && chmod +x /usr/local/bin/extract_frames.py
+
+# ASR/Transcription helper (with suppressed output - captures both stdout and stderr)
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import os\n\
+import json\n\
+import warnings\n\
+import io\n\
+import contextlib\n\
+\n\
+# Suppress all warnings and progress output\n\
+warnings.filterwarnings("ignore")\n\
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"\n\
+\n\
+# Capture stderr during import\n\
+_stderr = sys.stderr\n\
+sys.stderr = io.StringIO()\n\
+import whisper\n\
+sys.stderr = _stderr\n\
+\n\
+def transcribe_video(video_path, model_size="base"):\n\
+    """Transcribe audio from video using Whisper"""\n\
+    # Capture both stdout and stderr during transcription\n\
+    # Whisper prints \"Detected language:\" to stdout even with verbose=False\n\
+    old_stdout = sys.stdout\n\
+    old_stderr = sys.stderr\n\
+    sys.stdout = io.StringIO()\n\
+    sys.stderr = io.StringIO()\n\
+    try:\n\
+        model = whisper.load_model(model_size)\n\
+        result = model.transcribe(video_path, verbose=False)\n\
+    finally:\n\
+        sys.stdout = old_stdout\n\
+        sys.stderr = old_stderr\n\
+    return result\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 2:\n\
+        print(json.dumps({"error": "Usage: transcribe.py <video_path> [model_size]"}))\n\
+        sys.exit(1)\n\
+    model = sys.argv[2] if len(sys.argv) > 2 else "base"\n\
+    try:\n\
+        result = transcribe_video(sys.argv[1], model)\n\
+        output = {"text": result["text"], "segments": result["segments"]}\n\
+        print(json.dumps(output))\n\
+    except Exception as e:\n\
+        print(json.dumps({"error": str(e)}))\n\
+        sys.exit(1)\n\
+' > /usr/local/bin/transcribe.py && chmod +x /usr/local/bin/transcribe.py
+
+# Scene detection helper
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import json\n\
+from scenedetect import detect, ContentDetector\n\
+\n\
+def detect_scenes(video_path, threshold=27.0):\n\
+    """Detect scene changes in video"""\n\
+    scenes = detect(video_path, ContentDetector(threshold=threshold))\n\
+    return [{"start": s[0].get_seconds(), "end": s[1].get_seconds()} for s in scenes]\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 2:\n\
+        print(json.dumps({"error": "Usage: detect_scenes.py <video_path> [threshold]"}))\n\
+        sys.exit(1)\n\
+    thresh = float(sys.argv[2]) if len(sys.argv) > 2 else 27.0\n\
+    try:\n\
+        scenes = detect_scenes(sys.argv[1], thresh)\n\
+        print(json.dumps(scenes))\n\
+    except Exception as e:\n\
+        print(json.dumps({"error": str(e)}))\n\
+        sys.exit(1)\n\
+' > /usr/local/bin/detect_scenes.py && chmod +x /usr/local/bin/detect_scenes.py
+
+# Object detection helper
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import json\n\
+import warnings\n\
+warnings.filterwarnings("ignore")\n\
+from ultralytics import YOLO\n\
+\n\
+def detect_objects(image_path, conf_threshold=0.25):\n\
+    """Detect objects in image using YOLOv8"""\n\
+    model = YOLO("yolov8x.pt")\n\
+    results = model(image_path, conf=conf_threshold, verbose=False)\n\
+    detections = []\n\
+    for r in results:\n\
+        for box in r.boxes:\n\
+            detections.append({\n\
+                "class": r.names[int(box.cls)],\n\
+                "confidence": float(box.conf),\n\
+                "bbox": box.xyxy[0].tolist()\n\
+            })\n\
+    return detections\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 2:\n\
+        print(json.dumps({"error": "Usage: detect_objects.py <image_path> [confidence]"}))\n\
+        sys.exit(1)\n\
+    conf = float(sys.argv[2]) if len(sys.argv) > 2 else 0.25\n\
+    try:\n\
+        detections = detect_objects(sys.argv[1], conf)\n\
+        print(json.dumps(detections))\n\
+    except Exception as e:\n\
+        print(json.dumps({"error": str(e)}))\n\
+        sys.exit(1)\n\
+' > /usr/local/bin/detect_objects.py && chmod +x /usr/local/bin/detect_objects.py
+
+# OCR helper
+RUN echo '#!/usr/bin/env python3\n\
+import sys\n\
+import json\n\
+import warnings\n\
+warnings.filterwarnings("ignore")\n\
+import easyocr\n\
+\n\
+reader = None\n\
+\n\
+def convert_bbox(bbox):\n\
+    """Convert bbox to JSON-serializable format"""\n\
+    return [[float(coord) for coord in point] for point in bbox]\n\
+\n\
+def extract_text(image_path):\n\
+    """Extract text from image using EasyOCR"""\n\
+    global reader\n\
+    if reader is None:\n\
+        reader = easyocr.Reader(["en"], gpu=True, verbose=False)\n\
+    results = reader.readtext(image_path)\n\
+    return [{"text": str(r[1]), "confidence": float(r[2]), "bbox": convert_bbox(r[0])} for r in results]\n\
+\n\
+if __name__ == "__main__":\n\
+    if len(sys.argv) < 2:\n\
+        print(json.dumps({"error": "Usage: extract_text.py <image_path>"}))\n\
+        sys.exit(1)\n\
+    try:\n\
+        results = extract_text(sys.argv[1])\n\
+        print(json.dumps(results))\n\
+    except Exception as e:\n\
+        print(json.dumps({"error": str(e)}))\n\
+        sys.exit(1)\n\
+' > /usr/local/bin/extract_text.py && chmod +x /usr/local/bin/extract_text.py
+
+WORKDIR /testbed
+
+# Label the tools image
+LABEL maintainer="video-understanding-agent"
+LABEL version="1.0"
+LABEL description="Tools layer with helper scripts for video understanding"

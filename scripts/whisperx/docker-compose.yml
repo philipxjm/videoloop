@@ -1,0 +1,26 @@
+services:
+  whisperx:
+    build: .
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ${VIDEO_DIR:-./videos}:/data/videos:ro
+      - ${OUTPUT_DIR:-./output}:/data/output
+    # Hugging Face cache so models aren't re-downloaded every run
+      - whisperx-hf-cache:/root/.cache/huggingface
+    command: >
+      --video-dir /data/videos
+      --output-dir /data/output
+      --resume
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  whisperx-hf-cache:

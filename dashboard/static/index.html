@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VideoLoop Live Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=30">
+</head>
+<body>
+  <div class="background-grid"></div>
+  <div class="page">
+    <header class="header">
+      <div>
+        <p class="eyebrow">VideoLoop Evaluation</p>
+        <h1>Live Dashboard</h1>
+        <p class="subhead">Monitor evaluation runs in real-time.</p>
+      </div>
+      <div class="controls">
+        <select id="runSelect" style="margin-right: 8px; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text); font-size: 0.875rem;">
+          <option value="live">🔴 Live</option>
+        </select>
+        <button class="ghost" id="refreshRun">Reload</button>
+      </div>
+    </header>
+
+    <section class="cards">
+      <div class="card">
+        <div class="card-label">Overall</div>
+        <div class="metric" id="progressMetric">-- / --</div>
+        <div class="progress-bar"><span id="progressBar"></span></div>
+        <div class="helper" id="totalQuestions">Total questions: --</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Accuracy</div>
+        <div class="metric" id="accuracyMetric">--%</div>
+        <div class="helper" id="estimatedCorrect">Estimated correct: --</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Rate</div>
+        <div class="metric" id="rateMetric">-- s/q</div>
+        <div class="helper">Seconds per question (elapsed / total)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Tokens</div>
+        <div class="metric" id="tokensMetric">--</div>
+        <div class="helper" id="tokensBreakdown">In: -- | Out: --</div>
+        <div class="agent-breakdown" id="tokensAgentBreakdown"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Cost</div>
+        <div class="metric" id="costMetric">--</div>
+        <div class="helper" id="costBreakdown">In: -- | Out: --</div>
+        <div class="agent-breakdown" id="costAgentBreakdown"></div>
+      </div>
+      <div class="card card-meta">
+        <div class="card-label">Meta</div>
+        <div class="meta-item"><span class="meta-key">Run:</span> <span id="runMetric">—</span></div>
+        <div class="meta-item"><span class="meta-key">Model:</span> <span id="videoMetric">—</span></div>
+        <div class="meta-item"><span class="meta-key">Dataset:</span> <span id="questionMetric">—</span></div>
+      </div>
+    </section>
+
+    <div id="errorBanner" class="error-banner-global" style="display:none;"></div>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Workers</p>
+          <h2>Worker status</h2>
+        </div>
+      </div>
+      <div class="worker-grid" id="workerGrid">No workers active.</div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Questions</p>
+          <h2>Review steps & reasoning</h2>
+        </div>
+        <button class="ghost" id="refreshQuestions">Reload</button>
+      </div>
+      <div class="question-layout">
+        <div class="question-list" id="questionList">Loading questions...</div>
+        <div class="question-detail">
+          <div class="detail-header" id="detailHeader">Select a question</div>
+          <div class="detail-body" id="detailBody">—</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/static/app.js?v=30"></script>
+</body>
+</html>

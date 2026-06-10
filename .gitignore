@@ -1,0 +1,43 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Data (downloaded / generated locally — see scripts/prepare_*.py)
+dataset
+logs/
+results/
+outputs/
+eval_logs/
+
+# Dashboard generated data
+dashboard/data/
+dashboard/static/data/
+
+# Media
+*.mp4
+*.mkv
+*.webm
+*.avi
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local agent notes
+CLAUDE.md
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
