@@ -19,7 +19,7 @@
   <a href="#citation">Citation</a>
 </p>
 
-VideoLoop is a training-free agent for long-form video question answering. Most video agents keep appending tool outputs to their context until the key evidence is buried; we call this *semantic thrashing*. VideoLoop runs two loops instead: an outer loop reasons over the video with tools inside a Docker sandbox, and after every step an inner *memory orchestrator* pulls what matters from the sandbox filesystem and rewrites a small, bounded working memory.
+VideoLoop is a training-free agent for long-form video question answering. Most agents append every tool output to their context until key evidence is buried, which we call *semantic thrashing*. VideoLoop instead adds an inner *memory orchestrator* that rewrites a small, bounded working memory after every step.
 
 
 <a id="Highlights"></a>
