@@ -43,10 +43,6 @@ VideoLoop is a dual-loop multimodal agent for long-form video understanding. An 
 - [Table of Contents](#table-of-contents)
 - [1. Overview 🧠](#1-overview-)
 - [2. Results 📊](#2-results-)
-  - [2.1 Main Results](#21-main-results)
-  - [2.2 Plug-and-Play Across Backbones](#22-plug-and-play-across-backbones)
-  - [2.3 Semantic Thrashing Analysis](#23-semantic-thrashing-analysis)
-  - [2.4 Component Ablation and Token Cost](#24-component-ablation-and-token-cost)
 - [3. Environment Setup 🛠️](#3-environment-setup-️)
 - [4. Quick Start 🚀](#4-quick-start-)
   - [4.1 Prepare Datasets](#41-prepare-datasets)
@@ -79,55 +75,14 @@ VideoLoop is a dual-loop multimodal agent for long-form video understanding. An 
 <a id="results"></a>
 ## 2. Results 📊
 
-All numbers are accuracy (%). VideoMME and LongVideoBench use their long subsets (900 and 564 questions); VideoMMMU uses all 900 questions (300 per track). Native-model results are reproduced under the same settings, and gains in parentheses are over the corresponding native model.
-
-### 2.1 Main Results
-
-| Method | VideoMME-Long | VideoMMMU Perception | VideoMMMU Comprehension | VideoMMMU Adaptation | VideoMMMU Overall | LongVideoBench-Long |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Best prior agent | 81.2 | 81.3 | 81.3 | 72.3 | 78.3 | 76.4 |
-| Gemini 3 Flash | 80.7 | 84.0 | 83.0 | 83.7 | 83.6 | 67.9 |
-| + VideoLoop | 85.8 (+5.1) | 90.3 | 87.3 | 85.3 | 87.7 (+4.1) | 73.8 (+5.9) |
-| Gemini 3.1 Pro | 83.8 | 85.7 | 83.7 | 84.3 | 84.6 | 77.7 |
-| **+ VideoLoop** | **88.3 (+4.5)** | **90.7** | **87.7** | **88.0** | **88.8 (+4.2)** | **80.9 (+3.2)** |
-
-Best prior agents: VideoSeek / VideoARM on VideoMME-Long, LensWalk on VideoMMMU, and VideoARM on LongVideoBench-Long. The full comparison with 14 agentic systems and native LVLMs is in Table 1 of the paper.
-
-### 2.2 Plug-and-Play Across Backbones
-
-<p align="center">
-<img src="assets/backbones.png" width="60%">
-</p>
-
-| Backbone | Native | + VideoLoop | Gain |
+| Method | VideoMME-Long | VideoMMMU | LongVideoBench-Long |
 | --- | :---: | :---: | :---: |
-| Gemini 3.1 Pro | 83.8 | 88.3 | +4.5 |
-| Gemini 3 Flash | 80.7 | 85.8 | +5.1 |
-| Kimi K2.5 | 79.4 | 82.9 | +3.5 |
-| MiMo-V2-Omni | 76.6 | 80.3 | +3.7 |
+| Gemini 3 Flash | 80.7 | 83.6 | 67.9 |
+| + VideoLoop | 85.8 | 87.7 | 73.8 |
+| Gemini 3.1 Pro | 83.8 | 84.6 | 77.7 |
+| **+ VideoLoop** | **88.3** | **88.8** | **80.9** |
 
-VideoMME-Long accuracy. VideoLoop is training-free: the gains come from the memory design alone.
-
-### 2.3 Semantic Thrashing Analysis
-
-<p align="center">
-<img src="assets/retrievability.png" width="100%">
-</p>
-
-At sampled iterations, a separate blind judge (Gemini 3.1 Flash-Lite) sees only the question, the options, and a frozen snapshot of the agent's context, with no access to the video, filesystem, or tools. Its accuracy measures how much usable evidence the context still holds. Across difficulty quartiles, append-only retrievability drops from 86.7% (Q1, easiest) to 60.9% (Q4, hardest), while VideoLoop only drops from 94.7% to 81.1%.
-
-### 2.4 Component Ablation and Token Cost
-
-Gemini 3 Flash on VideoMME-Long. Q1–Q4 are fixed difficulty quartiles with 225 questions each.
-
-| Configuration | All | Q1 | Q2 | Q3 | Q4 | Tokens / Question |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Native single-pass LVLM | 80.7 | 93.3 | 86.2 | 73.3 | 69.8 | — |
-| Append-only agent | 81.9 | 93.8 | 83.6 | 79.6 | 70.7 | 614.9K |
-| Dual-loop only | 83.3 | 94.7 | 86.7 | 79.6 | 72.4 | 647.0K (+5.2%) |
-| **VideoLoop (dual-loop + filesystem)** | **85.8** | **94.7** | **87.1** | **81.3** | **80.0** | 618.2K (+0.5%) |
-
-Compared with the append-only agent, VideoLoop gains +3.9 points overall and +9.3 on the hardest quartile, with only 0.5% more tokens: evidence lives in the filesystem instead of being carried in context, so input tokens actually drop (559.0K vs. 584.6K).
+Accuracy (%). See the paper for comparisons with prior video agents, additional backbones, ablations, and the semantic-thrashing analysis.
 
 
 <a id="environment-setup"></a>
