@@ -21,6 +21,22 @@
 
 VideoLoop is a training-free agent for long-form video question answering. Most agents append every tool output to their context until key evidence is buried, which we call *semantic thrashing*. VideoLoop instead adds an inner *memory orchestrator* that rewrites a small, bounded working memory after every step.
 
+<br>
+<details open><summary>💡 We also have other long video understanding projects that may interest you ✨. </summary><p>
+
+> [**Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension**](https://arxiv.org/abs/2411.13093) <br>
+> Yongdong Luo, Xiawu Zheng and Jinfa Huang etc. <br>
+> [![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/Leon1207/Video-RAG-master)  [![github](https://img.shields.io/github/stars/Leon1207/Video-RAG-master.svg?style=social)](https://github.com/Leon1207/Video-RAG-master) [![arXiv](https://img.shields.io/badge/Arxiv-2411.13093-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2411.13093) <br>
+>
+> [**VideoSeek: Long-Horizon Video Agent with Tool-Guided Seeking**](https://arxiv.org/abs/2603.20185) <br>
+> Jingyang Lin, Jialian Wu and Jiang Liu etc. <br>
+> [![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/jylins/videoseek)  [![github](https://img.shields.io/github/stars/jylins/videoseek.svg?style=social)](https://github.com/jylins/videoseek) [![arXiv](https://img.shields.io/badge/Arxiv-2603.20185-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2603.20185) <br>
+>
+> [**Unleashing Hour-Scale Video Training for Long Video-Language Understanding**](https://arxiv.org/abs/2506.05332) <br>
+> Jingyang Lin, Jialian Wu and Ximeng Sun etc. <br>
+> [![github](https://img.shields.io/badge/-Github-black?logo=github)](https://github.com/jylins/hourllava)  [![github](https://img.shields.io/github/stars/jylins/hourllava.svg?style=social)](https://github.com/jylins/hourllava) [![arXiv](https://img.shields.io/badge/Arxiv-2506.05332-b31b1b.svg?logo=arXiv)](https://arxiv.org/abs/2506.05332) <br>
+> </p></details>
+
 
 <a id="Highlights"></a>
 ## Highlights ✨
@@ -209,21 +225,8 @@ This work builds on the [Video-MME](https://huggingface.co/datasets/lmms-lab/Vid
 
 This repository is released under `Apache-2.0`. Benchmark data remains under the respective benchmark authors' licenses.
 
-## 7. Related Projects 💡
-
-💡 We also have other long video understanding projects that may interest you ✨.
-
-[Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension](https://arxiv.org/abs/2411.13093) <br>
-Yongdong Luo, Xiawu Zheng and Guilin Li etc.
-
-[VideoSeek: Long-Horizon Video Agent with Tool-Guided Seeking](https://arxiv.org/abs/2603.20185) <br>
-Jingyang Lin, Jialian Wu and Jiang Liu etc.
-
-[Unleashing Hour-Scale Video Training for Long Video-Language Understanding](https://arxiv.org/abs/2506.05332) <br>
-Jingyang Lin, Jialian Wu and Ximeng Sun etc.
-
 <a id="citation"></a>
-## 8. Citation 📚
+## 7. Citation 📚
 
 If you use this repository, please cite the corresponding paper:
 
