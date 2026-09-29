@@ -1,130 +1,145 @@
-<div align="center">
+<h1 align="center">VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents</h1>
 
-# VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents
+<p align="center">
+  <img src="https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv">
+  <a href="https://www.python.org/downloads/">
+    <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache-2.0">
+  </a>
+</p>
 
-<a href="https://www.python.org/downloads/">
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
-</a>
-<a href="./LICENSE">
-  <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache-2.0">
-</a>
-<img src="https://img.shields.io/badge/VideoMME--Long-88.3%25-cyan" alt="VideoMME-Long 88.3%">
-<img src="https://img.shields.io/badge/VideoMMMU-89.1%25-cyan" alt="VideoMMMU 89.1%">
+<p align="center">
+  <a href="#Highlights">Highlights</a> ·
+  <a href="#overview">Overview</a> ·
+  <a href="#results">Results</a> ·
+  <a href="#environment-setup">Environment Setup</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#repository-structure">Repository Structure</a> ·
+  <a href="#acknowledgements">Acknowledgements</a> ·
+  <a href="#license">License</a> ·
+  <a href="#citation">Citation</a>
+</p>
 
-</div>
+VideoLoop is a dual-loop multimodal agent for long-form video understanding. An outer loop reasons over the video and runs tools inside a Docker sandbox; after every step, an inner loop (the *memory orchestrator*) retrieves evidence from the sandbox filesystem and rewrites a bounded working memory, so that evidence stays dense instead of being diluted by an ever-growing, append-only context. This repository provides the agent, the evaluation pipeline, dataset preparation scripts, and a live evaluation dashboard.
 
-A native multimodal agent with LLM-orchestrated working memory for long-video
-question answering. The outer loop reasons over the video and runs tools inside
-a Docker sandbox; an inner loop (the *memory orchestrator*) rewrites a bounded
-Markdown working memory from scratch after every step — keeping evidence dense
-instead of letting an append-only context dilute it.
 
+<a id="Highlights"></a>
 ## Highlights ✨
 
 <p align="center">
-  <img src="assets/figure1.png" width="92%" alt="VideoLoop: append-only semantic thrashing vs. dual-loop bounded working memory">
+<img src="assets/figure1.png" width="90%">
 </p>
 
-- 🧠 **Semantic thrashing.** We identify and formalize the core failure mode of
-  long-video agents: as append-only memory grows, attention on early evidence
-  collapses, so found evidence is effectively "lost" and re-searched.
-- 🔁 **Dual-loop bounded memory.** An outer multimodal reasoning loop is paired
-  with an inner orchestrator that retrieves from a sandbox filesystem and
-  **rewrites** a bounded working memory each step, breaking the append-only bottleneck.
-- 🏆 **State of the art.** With Gemini 3.1 Pro: **88.3%** VideoMME-Long,
-  **89.1%** VideoMMMU, **80.9%** LongVideoBench-Long.
-- 🔌 **Backbone-agnostic & training-free.** Consistent gains across Gemini 3.1 Pro,
-  Gemini 3 Flash, and other frontier models.
+| Direction | Description |
+| --- | --- |
+| Semantic Thrashing Analysis | Identify and formalize why append-only memory fails on long videos: it can add new evidence but never remove accumulated noise, so the agent loses access to what it has already found. |
+| Dual-Loop Bounded Memory | Pair the reasoning loop with an inner memory orchestrator that retrieves from an unbounded sandbox filesystem and rewrites a bounded working memory after every step. |
+| Plug-and-Play Gains | Training-free gains on four LVLM backbones (+4.2 points on average on VideoMME-Long) and new state-of-the-art results with Gemini 3.1 Pro: 88.3% on VideoMME-Long, 88.8% on VideoMMMU, and 80.9% on LongVideoBench-Long. |
 
 ## Table of Contents
-
 - [Highlights ✨](#highlights-)
-- [1. Results 📊](#1-results-)
-- [2. Architecture 🧠](#2-architecture-)
-- [3. Prerequisites 🧩](#3-prerequisites-)
-- [4. Environment Setup 🛠️](#4-environment-setup-️)
-- [5. Quick Start 🚀](#5-quick-start-)
-  - [5.1 Prepare datasets](#51-prepare-datasets)
-  - [5.2 Run a single question](#52-run-a-single-question)
-  - [5.3 Run full evaluation](#53-run-full-evaluation)
-  - [5.4 Results format](#54-results-format)
-- [6. Configuration ⚙️](#6-configuration-️)
-- [7. Repository Structure 🗂️](#7-repository-structure-️)
-- [8. Tests 🧪](#8-tests-)
-- [9. Acknowledgements 🙏](#9-acknowledgements-)
-- [10. License ⚖️](#10-license-️)
-- [11. Citation 📚](#11-citation-)
+- [Table of Contents](#table-of-contents)
+- [1. Overview 🧠](#1-overview-)
+- [2. Results 📊](#2-results-)
+  - [2.1 Main Results](#21-main-results)
+  - [2.2 Plug-and-Play Across Backbones](#22-plug-and-play-across-backbones)
+  - [2.3 Semantic Thrashing Analysis](#23-semantic-thrashing-analysis)
+  - [2.4 Component Ablation and Token Cost](#24-component-ablation-and-token-cost)
+- [3. Environment Setup 🛠️](#3-environment-setup-️)
+- [4. Quick Start 🚀](#4-quick-start-)
+  - [4.1 Prepare Datasets](#41-prepare-datasets)
+  - [4.2 Run a Single Question](#42-run-a-single-question)
+  - [4.3 Run the Full Evaluation](#43-run-the-full-evaluation)
+  - [4.4 Results Format](#44-results-format)
+  - [4.5 Configuration](#45-configuration)
+- [5. Repository Structure 🗂️](#5-repository-structure-️)
+- [6. Acknowledgements 🙏](#6-acknowledgements-)
+- [7. License ⚖️](#7-license-️)
+- [8. Citation 📚](#8-citation-)
 
-## 1. Results 📊
 
-| Benchmark | Questions | Accuracy |
-|---|---|---|
-| VideoMME-Long | 900 | **88.3%** |
-| VideoMMMU (3 tracks) | 804 | **89.1%** |
-| LongVideoBench-Long | 564 | **80.9%** |
+<a id="overview"></a>
+## 1. Overview 🧠
 
-Gemini 3.1 Pro as both the policy model and the memory orchestrator (the paper's
-default backbone). Cheaper backbones trade some accuracy for cost — e.g. Gemini 3
-Flash reaches 85.7 / 88.7 / 73.8 on the same three benchmarks.
+<p align="center">
+<img src="assets/framework.png" width="95%">
+</p>
 
-## 2. Architecture 🧠
+| Component | Description |
+| --- | --- |
+| Outer loop | The policy model reasons over a bounded context (the question, the working memory, and the last 8 message groups) and calls `analyze_frames`, `transcribe_audio`, `execute_bash`, or `submit_answer`, for up to 50 iterations. |
+| Memory orchestrator | After every step, it reads the new observation, retrieves question-relevant artifacts with `read_file` (and can look at stored frames with `inspect_frames`), and applies section-level update / append / delete edits to the working memory. |
+| Working memory | A six-section document (metadata, narrative understanding, timestamped evidence, temporal coverage, activity log, open investigation targets), kept within a fixed size budget and at most 6 key frames. It starts empty. |
+| Step manifest | A compressed log of all past actions and their parameters (timestamps, queries, executed code), giving a navigable history that links the working memory to the filesystem. |
+| Sandbox filesystem | Keeps every extracted frame, analysis output, transcript, and script losslessly across iterations, preserving the raw material from which evidence can be recovered. |
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                  │
-│                                DOCKER SANDBOX                                    │
-│                                                                                  │
-│    /videos/video.mp4        /outputs/frame_t*.jpg        /outputs/*.json         │
-│                                                                                  │
-│   ┌──────────────────────────────────────────────────────────────────────┐       │
-│   │                                                                      │       │
-│   │                      MAIN AGENT (multimodal LLM)                     │       │
-│   │                         up to 50 iterations                          │       │
-│   │                                                                      │       │
-│   │   Reads: <MEMORY> + question images + injected frames + <TRANSCRIPT> │       │
-│   │                                                                      │       │
-│   │   Tools:                                                             │       │
-│   │     execute_bash    — ffmpeg, python, any command in sandbox         │       │
-│   │     analyze_frames  — agent sees frames directly, describes them     │       │
-│   │     transcribe_audio — get video transcript                          │       │
-│   │     submit_answer   — submit final answer                            │       │
-│   │                                                                      │       │
-│   └──────────────────────┬───────────────────────────────────────────────┘       │
-│                          │                  ▲                                    │
-│                          │ <TOOL_RESULT>    │ curated <MEMORY>                   │
-│                          ▼                  │                                    │
-│   ┌──────────────────────────────────────────────────────────────────────┐       │
-│   │                                                                      │       │
-│   │                      MEMORY ORCHESTRATOR                             │       │
-│   │                      called after every tool                         │       │
-│   │                                                                      │       │
-│   │   Reads: working memory, <TOOL_RESULT>, manifest, available frames   │       │
-│   │                                                                      │       │
-│   │   Tools:                                                             │       │
-│   │     inspect_frames — see actual frames from sandbox                  │       │
-│   │     read_file      — access sandbox files                            │       │
-│   │                                                                      │       │
-│   │   Output: curated <MEMORY> (Markdown + images)                       │       │
-│   │                                                                      │       │
-│   └──────────────────────────────────────────────────────────────────────┘       │
-│                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
 
-## 3. Prerequisites 🧩
+<a id="results"></a>
+## 2. Results 📊
 
-- **Python 3.10+** and **Docker** — the agent runs every tool inside a Docker sandbox.
-- **NVIDIA GPU + drivers + the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).**
-  The sandbox image is CUDA-based and `DockerRuntime` requests a GPU by default.
-  On a host without a GPU, set `sandbox.gpu: false` in `configs/config.yaml` to
-  run the sandbox CPU-only (frame extraction works on CPU; only WhisperX
-  transcript generation genuinely needs a GPU).
-- A **Gemini API key** (see [Environment Setup](#4-environment-setup-️)), and **`ffmpeg`**
-  if you run the dataset prep / pre-compression scripts on the host.
+All numbers are accuracy (%). VideoMME and LongVideoBench use their long subsets (900 and 564 questions); VideoMMMU uses all 900 questions (300 per track). Native-model results are reproduced under the same settings, and gains in parentheses are over the corresponding native model.
 
-## 4. Environment Setup 🛠️
+### 2.1 Main Results
 
-**1. Python environment**
+| Method | VideoMME-Long | VideoMMMU Perception | VideoMMMU Comprehension | VideoMMMU Adaptation | VideoMMMU Overall | LongVideoBench-Long |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Best prior agent | 81.2 | 81.3 | 81.3 | 72.3 | 78.3 | 76.4 |
+| Gemini 3 Flash | 80.7 | 84.0 | 83.0 | 83.7 | 83.6 | 67.9 |
+| + VideoLoop | 85.8 (+5.1) | 90.3 | 87.3 | 85.3 | 87.7 (+4.1) | 73.8 (+5.9) |
+| Gemini 3.1 Pro | 83.8 | 85.7 | 83.7 | 84.3 | 84.6 | 77.7 |
+| **+ VideoLoop** | **88.3 (+4.5)** | **90.7** | **87.7** | **88.0** | **88.8 (+4.2)** | **80.9 (+3.2)** |
+
+Best prior agents: VideoSeek / VideoARM on VideoMME-Long, LensWalk on VideoMMMU, and VideoARM on LongVideoBench-Long. The full comparison with 14 agentic systems and native LVLMs is in Table 1 of the paper.
+
+### 2.2 Plug-and-Play Across Backbones
+
+<p align="center">
+<img src="assets/backbones.png" width="60%">
+</p>
+
+| Backbone | Native | + VideoLoop | Gain |
+| --- | :---: | :---: | :---: |
+| Gemini 3.1 Pro | 83.8 | 88.3 | +4.5 |
+| Gemini 3 Flash | 80.7 | 85.8 | +5.1 |
+| Kimi K2.5 | 79.4 | 82.9 | +3.5 |
+| MiMo-V2-Omni | 76.6 | 80.3 | +3.7 |
+
+VideoMME-Long accuracy. VideoLoop is training-free: the gains come from the memory design alone.
+
+### 2.3 Semantic Thrashing Analysis
+
+<p align="center">
+<img src="assets/retrievability.png" width="100%">
+</p>
+
+At sampled iterations, a separate blind judge (Gemini 3.1 Flash-Lite) sees only the question, the options, and a frozen snapshot of the agent's context, with no access to the video, filesystem, or tools. Its accuracy measures how much usable evidence the context still holds. Across difficulty quartiles, append-only retrievability drops from 86.7% (Q1, easiest) to 60.9% (Q4, hardest), while VideoLoop only drops from 94.7% to 81.1%.
+
+### 2.4 Component Ablation and Token Cost
+
+Gemini 3 Flash on VideoMME-Long. Q1–Q4 are fixed difficulty quartiles with 225 questions each.
+
+| Configuration | All | Q1 | Q2 | Q3 | Q4 | Tokens / Question |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Native single-pass LVLM | 80.7 | 93.3 | 86.2 | 73.3 | 69.8 | — |
+| Append-only agent | 81.9 | 93.8 | 83.6 | 79.6 | 70.7 | 614.9K |
+| Dual-loop only | 83.3 | 94.7 | 86.7 | 79.6 | 72.4 | 647.0K (+5.2%) |
+| **VideoLoop (dual-loop + filesystem)** | **85.8** | **94.7** | **87.1** | **81.3** | **80.0** | 618.2K (+0.5%) |
+
+Compared with the append-only agent, VideoLoop gains +3.9 points overall and +9.3 on the hardest quartile, with only 0.5% more tokens: evidence lives in the filesystem instead of being carried in context, so input tokens actually drop (559.0K vs. 584.6K).
+
+
+<a id="environment-setup"></a>
+## 3. Environment Setup 🛠️
+
+Requirements:
+
+- `Python 3.10+` and `Docker`: the agent runs every tool inside a Docker sandbox.
+- NVIDIA GPU, drivers, and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html): the sandbox image is CUDA-based and `DockerRuntime` requests a GPU by default. On a host without a GPU, set `sandbox.gpu: false` in `configs/config.yaml` to run the sandbox CPU-only (frame extraction works on CPU; only WhisperX transcript generation needs a GPU).
+- `ffmpeg`, if you run the dataset preparation or pre-compression scripts on the host.
+
+Create the Python environment:
 
 ```bash
 conda create -n videoloop python=3.10 -y
@@ -132,7 +147,7 @@ conda activate videoloop
 pip install -e ".[dashboard,datasets]"
 ```
 
-**2. Docker sandbox**
+Build the Docker sandbox:
 
 ```bash
 cd docker
@@ -146,8 +161,6 @@ Verify GPU access in the built image (skip if running CPU-only):
 docker run --rm -it --gpus all video-understanding-sandbox:latest nvidia-smi
 ```
 
-**3. API key**
-
 Get a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey), then:
 
 ```bash
@@ -155,36 +168,28 @@ cp .env.example .env
 # edit .env and set GEMINI_API_KEY
 ```
 
-With no `api_base` configured, all components call the official Gemini API. Any
-OpenAI-compatible endpoint can be substituted via `api_base` in
-`configs/config.yaml` (or `MAIN_AGENT_API_BASE`).
+With no `api_base` configured, all components call the official Gemini API. Any OpenAI-compatible endpoint can be substituted via `api_base` in `configs/config.yaml` (or `MAIN_AGENT_API_BASE`).
 
-## 5. Quick Start 🚀
+<a id="quick-start"></a>
+## 4. Quick Start 🚀
 
-### 5.1 Prepare datasets
+### 4.1 Prepare Datasets
 
-The benchmark JSONs are rebuilt from the official HuggingFace releases — nothing
-is redistributed in this repo. Both datasets are gated on the Hub, so first
-authenticate (accept each dataset's terms on its HF page, then either run
-`huggingface-cli login` or set `HF_TOKEN` in `.env`):
+The benchmark JSONs are rebuilt from the official HuggingFace releases; nothing is redistributed in this repository. Both datasets are gated on the Hub, so first accept each dataset's terms on its HF page, then either run `huggingface-cli login` or set `HF_TOKEN` in `.env`:
 
 ```bash
 python scripts/prepare_videommmu.py --download-videos   # ~25GB of videos
 python scripts/prepare_videomme.py  --download-videos   # Long split, several hundred GB
 ```
 
-Both scripts work without `--download-videos` if you obtain the videos separately
-(place them in `dataset/<benchmark>/videos/`). Video-MME is licensed for research
-use only; VideoMMMU under its authors' license — see the respective HF dataset cards.
+- [VideoMMMU](https://huggingface.co/datasets/lmms-lab/VideoMMMU): `dataset/videommmu`
+- [Video-MME](https://huggingface.co/datasets/lmms-lab/Video-MME): `dataset/videomme_long`
 
-Transcripts: the pipeline reads cached WhisperX transcripts from
-`dataset/<benchmark>/transcripts_whisperx/`. Generate them on a GPU machine with
-`scripts/whisperx/whisperx_transcribe.py` — see
-[scripts/whisperx/README.md](scripts/whisperx/README.md) for the Docker setup and
-CLI options. Optional pre-compression for huge videos:
-`python scripts/precompress_videos.py --help`.
+Both scripts also work without `--download-videos` if you obtain the videos separately (place them in `dataset/<benchmark>/videos/`). Video-MME is licensed for research use only; VideoMMMU is under its authors' license. See the respective HF dataset cards.
 
-### 5.2 Run a single question
+Transcripts are read from cached WhisperX outputs in `dataset/<benchmark>/transcripts_whisperx/`. Generate them on a GPU machine with `scripts/whisperx/whisperx_transcribe.py`; see [scripts/whisperx/README.md](scripts/whisperx/README.md) for the Docker setup and CLI options. For very large videos, optional pre-compression is available via `python scripts/precompress_videos.py --help`.
+
+### 4.2 Run a Single Question
 
 ```bash
 python scripts/agent_cli.py single \
@@ -193,7 +198,7 @@ python scripts/agent_cli.py single \
   --options "A. Red,B. Blue,C. Green,D. White"
 ```
 
-### 5.3 Run full evaluation
+### 4.3 Run the Full Evaluation
 
 ```bash
 python scripts/agent_cli.py parallel-eval \
@@ -202,17 +207,11 @@ python scripts/agent_cli.py parallel-eval \
   --workers 32
 ```
 
-A live dashboard starts automatically at `http://localhost:8080` (disable with
-`--no-dashboard`; see [dashboard/README.md](dashboard/README.md)).
+A live dashboard starts automatically at `http://localhost:8080` (disable it with `--no-dashboard`; see [dashboard/README.md](dashboard/README.md)).
 
-**Expected cost / runtime.** The full dual-loop + filesystem configuration uses
-**~618K tokens per question** on VideoMME-Long (≈559K input / ≈59K output; frame
-images dominate the input), per Table 3 of the paper. Token usage is set by the
-architecture and is roughly backbone-independent; wall-clock and dollar cost scale
-with the chosen model (`gemini-3.1-pro-preview` is slower and pricier than the
-flash backbones) and the number of workers.
+Expected cost: the full configuration uses about 618K tokens per question on VideoMME-Long (about 559K input and 59K output, mostly frame images), measured with Gemini 3 Flash. Wall-clock time and dollar cost scale with the chosen model (`gemini-3.1-pro-preview` is slower and pricier than the Flash backbones) and the number of workers.
 
-### 5.4 Results format
+### 4.4 Results Format
 
 Each run writes `logs/parallel_eval_<run-id>.json`:
 
@@ -242,77 +241,86 @@ Each run writes `logs/parallel_eval_<run-id>.json`:
 }
 ```
 
-The dashboard renders this live during the run; `failed` questions have
-`predicted: null` and a populated `error`.
+The dashboard renders this live during the run; failed questions have `predicted: null` and a populated `error`.
 
-## 6. Configuration ⚙️
+### 4.5 Configuration
 
-`configs/config.yaml` ships with the configuration used for the paper results
-(native multimodal agent, orchestrated memory, `analyze_frames`-only visual
-analysis, Gemini 3.1 Pro for both loops). Point `CONFIG_FILE` at another file in
-`configs/` to experiment. Prompts live in `configs/prompts.yaml` (`PROMPTS_FILE`
-to override).
+`configs/config.yaml` ships with the configuration used for the paper results (native multimodal agent, orchestrated memory, `analyze_frames`-only visual analysis, Gemini 3.1 Pro for both loops). Point `CONFIG_FILE` at another file in `configs/` to experiment. Prompts live in `configs/prompts.yaml` (override with `PROMPTS_FILE`).
 
-## 7. Repository Structure 🗂️
+Paper settings and the corresponding keys in `configs/config.yaml`:
 
-```
+- Outer loop: at most 50 iterations (`--max-iterations`, default 50) and at least 6 before submitting (`min_iterations_before_submit: 6`), with a recent window of 8 message groups (`recent_messages_window: 8`)
+- Working memory: at most 6 key frames (`max_key_frames: 6`)
+- Step manifest: the oldest 10 records are folded into one summary (`manifest_compression_batch: 10`) once 30 unsummarized records accumulate (`manifest_max_detailed: 30`)
+
+<a id="repository-structure"></a>
+## 5. Repository Structure 🗂️
+
+```text
 videoloop/
-├── video_agent/            # Core package
-│   ├── agent.py            # Outer multimodal reasoning loop
-│   ├── memory/             # Inner-loop memory orchestrator
-│   ├── tools.py            # Tool schemas
-│   ├── tool_handlers.py    # Tool implementations
-│   ├── llm_api.py          # Gemini-native + OpenAI-compatible transport
-│   ├── api_calls.py        # Provider dispatch + normalization
-│   ├── parallel_eval.py    # Multi-worker evaluation
-│   └── docker_runtime.py   # Sandbox lifecycle
+├── video_agent/
+│   ├── agent.py
+│   ├── memory/
+│   ├── tools.py
+│   ├── tool_handlers.py
+│   ├── llm_api.py
+│   ├── api_calls.py
+│   ├── parallel_eval.py
+│   └── docker_runtime.py
 ├── scripts/
-│   ├── agent_cli.py        # CLI: `single` / `parallel-eval`
-│   ├── prepare_videomme.py # Rebuild VideoMME-Long JSON from HF
-│   ├── prepare_videommmu.py# Rebuild VideoMMMU JSON from HF
-│   └── whisperx/           # WhisperX transcript generation (Docker)
-├── configs/                # config.yaml + prompts.yaml
-├── dashboard/              # Live evaluation dashboard (FastAPI + static)
-├── docker/                 # Sandbox images (base + tools)
-├── tests/                  # Unit tests
-└── assets/                 # Figures
+│   ├── agent_cli.py
+│   ├── prepare_videomme.py
+│   ├── prepare_videommmu.py
+│   └── whisperx/
+├── configs/
+├── dashboard/
+├── docker/
+├── tests/
+└── assets/
 ```
 
-| Path | What it does |
-|---|---|
-| `video_agent/agent.py` | Outer agent loop: reasoning, tool calls, frame analysis |
-| `video_agent/memory/orchestrator.py` | Inner loop: rewrites bounded working memory each step |
-| `video_agent/parallel_eval.py` | Parallel benchmark evaluation with live dashboard |
-| `scripts/agent_cli.py` | Entry point for single questions and full eval |
-| `configs/config.yaml` | Paper configuration (model, memory, tool whitelist) |
-| `dashboard/` | Real-time + archived run viewer |
+Core directories:
 
-## 8. Tests 🧪
+| Path | Description |
+| --- | --- |
+| `video_agent/agent.py` | Outer agent loop: reasoning, tool calls, and frame analysis |
+| `video_agent/memory/orchestrator.py` | Inner loop: rewrites the bounded working memory after every step |
+| `video_agent/tools.py`, `video_agent/tool_handlers.py` | Tool schemas and their implementations |
+| `video_agent/llm_api.py`, `video_agent/api_calls.py` | Gemini-native and OpenAI-compatible transport, provider dispatch, and normalization |
+| `video_agent/parallel_eval.py` | Multi-worker benchmark evaluation with the live dashboard |
+| `video_agent/docker_runtime.py` | Sandbox lifecycle |
+| `scripts/agent_cli.py` | Entry point for single questions and full evaluation |
+| `scripts/prepare_videomme.py`, `scripts/prepare_videommmu.py` | Rebuild the benchmark JSONs from HuggingFace |
+| `configs/config.yaml` | Paper configuration (models, memory, tool whitelist) |
+| `dashboard/` | Real-time and archived run viewer (FastAPI + static) |
+
+Tests:
 
 ```bash
 pip install -e ".[dev]"
 pytest tests/
 ```
 
-## 9. Acknowledgements 🙏
+<a id="acknowledgements"></a>
+## 6. Acknowledgements 🙏
 
-This work builds on the [Video-MME](https://huggingface.co/datasets/lmms-lab/Video-MME),
-[VideoMMMU](https://huggingface.co/datasets/lmms-lab/VideoMMMU), and
-[LongVideoBench](https://huggingface.co/datasets/longvideobench/LongVideoBench)
-benchmarks, and on [WhisperX](https://github.com/m-bain/whisperX) for transcripts.
-We thank the authors of these resources.
+This work builds on the [Video-MME](https://huggingface.co/datasets/lmms-lab/Video-MME), [VideoMMMU](https://huggingface.co/datasets/lmms-lab/VideoMMMU), and [LongVideoBench](https://huggingface.co/datasets/longvideobench/LongVideoBench) benchmarks, and on [WhisperX](https://github.com/m-bain/whisperX) for transcripts. We sincerely thank the authors and maintainers of these resources.
 
-## 10. License ⚖️
+<a id="license"></a>
+## 7. License ⚖️
 
-[Apache-2.0](LICENSE). Benchmark data remains under the respective benchmark
-authors' licenses.
+This repository is released under `Apache-2.0`. See `LICENSE` for the full license text. Benchmark data remains under the respective benchmark authors' licenses.
 
-## 11. Citation 📚
+<a id="citation"></a>
+## 8. Citation 📚
+
+If you use this repository, please cite the corresponding paper:
 
 ```bibtex
-@article{xu2026videoloop,
-  title   = {VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents},
-  author  = {Xu, Jianming and Huang, Jinfa and Lin, Jingyang and Yang, Zhengyuan and Luo, Jiebo},
-  year    = {2026},
+@article{huang2026videoloop,
+  title={VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents},
+  author={Huang, Jinfa and Xu, Jianming and Lin, Jingyang and Yang, Zhengyuan and Luo, Jiebo},
+  journal={arXiv preprint},
+  year={2026}
 }
 ```
