@@ -209,8 +209,21 @@ This work builds on the [Video-MME](https://huggingface.co/datasets/lmms-lab/Vid
 
 This repository is released under `Apache-2.0`. Benchmark data remains under the respective benchmark authors' licenses.
 
+## 7. Related Projects 💡
+
+💡 We also have other long video understanding projects that may interest you ✨.
+
+[Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension](https://arxiv.org/abs/2411.13093) <br>
+Yongdong Luo, Xiawu Zheng and Guilin Li etc.
+
+[VideoSeek: Long-Horizon Video Agent with Tool-Guided Seeking](https://arxiv.org/abs/2603.20185) <br>
+Jingyang Lin, Jialian Wu and Jiang Liu etc.
+
+[Unleashing Hour-Scale Video Training for Long Video-Language Understanding](https://arxiv.org/abs/2506.05332) <br>
+Jingyang Lin, Jialian Wu and Ximeng Sun etc.
+
 <a id="citation"></a>
-## 7. Citation 📚
+## 8. Citation 📚
 
 If you use this repository, please cite the corresponding paper:
 
