@@ -1,7 +1,9 @@
 <h1 align="center">VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b?logo=arxiv&logoColor=white" alt="arXiv">
+  <a href="https://arxiv.org/abs/2609.38119">
+    <img src="https://img.shields.io/badge/arXiv-2609.38119-b31b1b?logo=arxiv&logoColor=white" alt="arXiv">
+  </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   </a>
@@ -234,7 +236,7 @@ If you use this repository, please cite the corresponding paper:
 @article{huang2026videoloop,
   title={VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents},
   author={Huang, Jinfa and Xu, Jianming and Lin, Jingyang and Yang, Zhengyuan and Luo, Jiebo},
-  journal={arXiv preprint},
+  journal={arXiv preprint arXiv:2609.38119},
   year={2026}
 }
 ```
