@@ -233,9 +233,9 @@ This repository is released under `Apache-2.0`. Benchmark data remains under the
 If you use this repository, please cite the corresponding paper:
 
 ```bibtex
-@article{huang2026videoloop,
+@article{xu2026videoloop,
   title={VideoLoop: Looped Working Memory Against Semantic Thrashing in Long-Form Video Agents},
-  author={Huang, Jinfa and Xu, Jianming and Lin, Jingyang and Yang, Zhengyuan and Luo, Jiebo},
+  author={Xu, Jianming and Huang, Jinfa and Lin, Jingyang and Yang, Zhengyuan and Luo, Jiebo},
   journal={arXiv preprint arXiv:2609.38119},
   year={2026}
 }
