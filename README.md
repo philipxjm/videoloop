@@ -4,6 +4,9 @@
   <a href="https://arxiv.org/abs/2609.38119">
     <img src="https://img.shields.io/badge/arXiv-2609.38119-b31b1b?logo=arxiv&logoColor=white" alt="arXiv">
   </a>
+  <a href="https://huggingface.co/papers/2609.38119">
+    <img src="https://img.shields.io/badge/Hugging%20Face-Papers-FFD21E?logo=huggingface&logoColor=black" alt="Hugging Face Papers">
+  </a>
   <a href="https://www.python.org/downloads/">
     <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   </a>
